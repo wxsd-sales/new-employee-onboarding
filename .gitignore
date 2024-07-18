@@ -1,2 +1,6 @@
 my-env/
 .env
+test-split.pt
+test-time.py
+cron.sh
+app_with_loop.py
