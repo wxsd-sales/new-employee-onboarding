@@ -1,15 +1,3 @@
-"""
-    Users created in AD, synched with CH
-    For every new user, add him to an existing space (used for emergency notifications)
-    Send welcome message, use cards. New requeriment: Welcome should be a 1:1 message
-        
-    Use an Admin Space to report, what?
-        User added
-        Message sent
-    
-    direct message with space description/purpose etc report in the admin space
-"""
-
 from dotenv import load_dotenv
 import os
 import requests
