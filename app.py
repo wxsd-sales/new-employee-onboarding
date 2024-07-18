@@ -17,13 +17,11 @@ import json
 from urllib.parse import urlencode, urlunparse
 
 load_dotenv()
-main_room_id = os.getenv("MAIN_ROOM_ID")
-reporting_room_id = os.getenv("REPORTING_ROOM_ID")
-webex_api_url = "https://webexapis.com/v1"
-
 service_app_refresh_token = os.getenv("SERVICE_APP_REFRESH_TOKEN")
 bot_token = os.getenv("BOT_TOKEN")
-
+main_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vMDI1MjRlZDAtMzAyMC0xMWVmLWFkZTYtY2Y2MDczY2MwYjVm"
+reporting_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vYTg1NmQwMzAtMzIzMi0xMWVmLTk4OGMtZTExZmMzM2FlZDYx"
+webex_api_url = "https://webexapis.com/v1"
 org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
 
 def user_in_the_space (room_id, user_email):
