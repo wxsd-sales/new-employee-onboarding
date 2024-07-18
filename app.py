@@ -11,6 +11,15 @@ main_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vMDI1MjRlZDAtMzAyMC0xMWVmLWFkZTYtY2Y2
 reporting_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vYTg1NmQwMzAtMzIzMi0xMWVmLTk4OGMtZTExZmMzM2FlZDYx"
 webex_api_url = "https://webexapis.com/v1"
 org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
+"""
+TH - org_id, reporting_room_id, and main_room_id should all be .env variables like bot_token and service_app.
+TH - your headers are always the same for Webex, I'd recommend making them a variable. Global is fine:
+headers = {
+    'Authorization': 'Bearer ' + bot_token,
+    'Content-Type': 'application/json'
+}
+TH - then deleting each definition in your functions.
+"""
 
 def user_in_the_space (room_id, user_email):
     path = "memberships"
@@ -23,12 +32,18 @@ def user_in_the_space (room_id, user_email):
     urlparts = (scheme, netloc, path, '', urlencode(parameters), '')
     memberships_api_url = urlunparse(urlparts)
     # memberships_api_url = webex_api_url + "memberships" + "?roomId=" + room_id + "&max=100" + "&personEmail=" + user_email
+    """
+    TH - the lines above this comment are hard to read
+    this is my recommended memberships_api_url, for simplicty and readability:
+    memberships_api_url = "{0}/memberships?roomId={1}&personEmail={2}&max=100".format(webex_api_url, room_id, user_email)
+    """
     # PENDING: pagination
-    payload = {}
+    payload = {} #TH - This line should be deleted.
     headers = {
         'Authorization': 'Bearer ' + bot_token,
         'Content-Type': 'application/json'
     }
+    #TH - GET requests have no "data", so the data attribute should be removed, along with the empty payload.
     response = requests.request("GET", memberships_api_url, headers=headers, data=payload)
     print ("Get membership status code: ", response.status_code)
     
@@ -40,11 +55,14 @@ def user_in_the_space (room_id, user_email):
 def get_room_name(room_id):
     path = 'rooms'
     rooms_api_url = webex_api_url + "/" + path + "/" + room_id # Should I use urlunparse here too ? there are no parameters
-    payload = {}
+    #TH -  I think urlunparse is overkill here.  What you have is find, but I recommend:
+    #rooms_api_url = "{0}/rooms/{2}".format(webex_api_url, room_id)
+    payload = {}#TH -  this should be deleted.
     headers = {
         'Authorization': 'Bearer ' + bot_token,
         'Content-Type': 'application/json'
     }
+    #TH - GET requests have no "data", so the data attribute should be removed, along with the empty payload.
     response = requests.request("GET", rooms_api_url   , headers=headers, data=payload)
     print ("Get room status code: ", response.status_code)
     if response.status_code == 200:
@@ -63,10 +81,13 @@ def get_user_name(user_email):
     people_api_url = urlunparse(urlparts)
     
     # people_api_url = webex_api_url + "people" + "?email=" + user_email
-    payload = {}
+    #TH -  recommends deleting above lines in favor of:
+    #people_api_url = "{0}/people?email={1}".format(webex_api_url, user_email)
+    payload = {}#TH -  this should be deleted.
     headers = {
         'Authorization': 'Bearer ' + bot_token
     }
+    #TH - GET requests have no "data", so the data attribute should be removed, along with the empty payload.
     response = requests.request("GET", people_api_url, headers=headers, data=payload)
     print ("Get username status code: ", response.status_code)
     if response.status_code == 200:
@@ -202,7 +223,7 @@ def check_for_new_users():
 def main_function():
     print ('App starts')
     new_users = check_for_new_users()
-    if new_users:
+    if new_users:#TH - you can technically remove this "if" because if new_users equals [], our for loop won't do anything.
         for user in new_users:
             user_email = user['userName']
             add_user_to_space(main_room_id, user_email)
