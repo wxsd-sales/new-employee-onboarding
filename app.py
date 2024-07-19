@@ -7,10 +7,10 @@ from urllib.parse import urlencode, urlunparse
 load_dotenv()
 service_app_refresh_token = os.getenv("SERVICE_APP_REFRESH_TOKEN")
 bot_token = os.getenv("BOT_TOKEN")
-main_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vMDI1MjRlZDAtMzAyMC0xMWVmLWFkZTYtY2Y2MDczY2MwYjVm"
-reporting_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vYTg1NmQwMzAtMzIzMi0xMWVmLTk4OGMtZTExZmMzM2FlZDYx"
+main_room_id = ""
+reporting_room_id = ""
 webex_api_url = "https://webexapis.com/v1"
-org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
+org_id = ""
 """
 TH - org_id, reporting_room_id, and main_room_id should all be .env variables like bot_token and service_app.
 TH - your headers are always the same for Webex, I'd recommend making them a variable. Global is fine:
