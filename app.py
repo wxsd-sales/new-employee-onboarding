@@ -2,77 +2,65 @@ from dotenv import load_dotenv
 import os
 import requests
 import json
-from urllib.parse import urlencode, urlunparse
+import urllib.parse
+import traceback
 
 load_dotenv()
 service_app_refresh_token = os.getenv("SERVICE_APP_REFRESH_TOKEN")
 bot_token = os.getenv("BOT_TOKEN")
-main_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vMDI1MjRlZDAtMzAyMC0xMWVmLWFkZTYtY2Y2MDczY2MwYjVm"
-reporting_room_id = "Y2lzY29zcGFyazovL3VzL1JPT00vYTg1NmQwMzAtMzIzMi0xMWVmLTk4OGMtZTExZmMzM2FlZDYx"
+main_room_id = os.getenv("MAIN_ROOM_ID")
+reporting_room_id = os.getenv("REPOTING_ROOM_ID")
 webex_api_url = "https://webexapis.com/v1"
 org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
 
+headers = { 
+    'Authorization': 'Bearer ' + bot_token,
+    'Content-Type': 'application/json'
+}
+
 def user_in_the_space (room_id, user_email):
-    path = "memberships"
-    parameters = {
-        "roomId": room_id,
-        "max": 100,
-        "personEmail": user_email
-    }
-    scheme, netloc, *_ = webex_api_url.replace('://', ' ').split() # '*' captures the rest, '_' indicates that it won't be used
-    urlparts = (scheme, netloc, path, '', urlencode(parameters), '')
-    memberships_api_url = urlunparse(urlparts)
+    # You need to encode URL paratemeters properly, otherwise address with '+' will fail, for example
+    encoded_email = urllib.parse.quote(user_email)
+    memberships_api_url = "{0}/memberships?roomId={1}&personEmail={2}&max=100".format(webex_api_url, room_id, encoded_email)
     # memberships_api_url = webex_api_url + "memberships" + "?roomId=" + room_id + "&max=100" + "&personEmail=" + user_email
     # PENDING: pagination
-    payload = {}
-    headers = {
-        'Authorization': 'Bearer ' + bot_token,
-        'Content-Type': 'application/json'
-    }
-    response = requests.request("GET", memberships_api_url, headers=headers, data=payload)
-    print ("Get membership status code: ", response.status_code)
-    
+
+    try:
+        response = requests.request("GET", memberships_api_url, headers=headers)
+        print ("User in the space GET status code: ", response.status_code)
+        items = json.loads(response.text)['items']
+        return items
+    except Exception:
+        traceback.print_exc()
+    """
     if response.status_code == 200:
         items = json.loads(response.text)['items']
         return items
-    else: print ("Error message: " + json.loads(response.text)['message'])
+    else: print ("Error message: " + json.loads(response.text)['message']) # if you do it like this, this line could not be loaded depending on the error, 
+    script fails after the GET request. For example if the webex_api_url is not well formed
+    """ 
 
 def get_room_name(room_id):
-    path = 'rooms'
-    rooms_api_url = webex_api_url + "/" + path + "/" + room_id # Should I use urlunparse here too ? there are no parameters
-    payload = {}
-    headers = {
-        'Authorization': 'Bearer ' + bot_token,
-        'Content-Type': 'application/json'
-    }
-    response = requests.request("GET", rooms_api_url   , headers=headers, data=payload)
-    print ("Get room status code: ", response.status_code)
-    if response.status_code == 200:
+    rooms_api_url = "{0}/rooms/{1}".format(webex_api_url, room_id)
+    try:
+        response = requests.request("GET", rooms_api_url, headers=headers)
+        print ("Get room status code: ", response.status_code)
         room_name = json.loads(response.text)['title']
         return room_name
-    else: print ("Error message: " + json.loads(response.text)['message'])
+    except Exception:
+        traceback.print_exc()
 
 def get_user_name(user_email):
-    path = "people"
-    parameters = {
-        "email": user_email
-    }
-
-    scheme, netloc, *_ = webex_api_url.replace('://', ' ').split()
-    urlparts = (scheme, netloc, path, '', urlencode(parameters), '')
-    people_api_url = urlunparse(urlparts)
-    
     # people_api_url = webex_api_url + "people" + "?email=" + user_email
-    payload = {}
-    headers = {
-        'Authorization': 'Bearer ' + bot_token
-    }
-    response = requests.request("GET", people_api_url, headers=headers, data=payload)
-    print ("Get username status code: ", response.status_code)
-    if response.status_code == 200:
-        user_name = json.loads((response.text))['items'][0]['displayName'] # always only one item ????
+    encoded_email = urllib.parse.quote(user_email)
+    people_api_url = "{0}/people?email={1}".format(webex_api_url, encoded_email)
+    try:
+        response = requests.request("GET", people_api_url, headers=headers)
+        print ("Get username status code: ", response.status_code)
+        user_name = json.loads((response.text))['items'][0]['displayName'] # PENDING: always only one item ????
         return user_name
-    else: print ("Error message: " + json.loads(response.text)['message'])
+    except Exception:
+        traceback.print_exc()
 
 def add_user_to_space(room_id, user_email, is_moderator=False):      
     # check if user is already a member of the space
@@ -81,93 +69,79 @@ def add_user_to_space(room_id, user_email, is_moderator=False):
     if not membebership_data:
         room_name = get_room_name(room_id)
         print (f"User: {user_email} is not member of Room: {room_name}")    
-        path = "memberships"
-        
-        # parameters = {}
-        # scheme, netloc, *_ = webex_api_url.replace('://', ' ').split()
-        # urlparts = (scheme, netloc, path, '', urlencode(parameters), '')
-        # memberships_api_url = urlunparse(urlparts)
-        
-        memberships_api_url = webex_api_url + "/" + path # Should I use urlunparse here too ? there are no parameters
+        memberships_api_url = webex_api_url + "/" + "memberships"
         payload = json.dumps({
             "roomId": room_id,
             "personEmail": user_email,
             "isModerator": is_moderator
         })
-        headers = {
-            'Authorization': 'Bearer ' + bot_token,
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.request("POST", memberships_api_url, headers=headers, data=payload)
-        print ("Add user to space status code: ", response.status_code)
-        if response.status_code != 200: print ("Error message: " + json.loads(response.text)['message'])
+        try: 
+            response = requests.request("POST", memberships_api_url, headers=headers, data=payload)
+            print ("Add user to space status code: ", response.status_code)
+        except Exception:
+            traceback.print_exc()
 
 def send_message_to_space(room_id, markdown_text):
-    path = "messages"
-    messages_api_url = webex_api_url + "/" + path # I should use urlunparse here too, I do not do it because there are no paremeters
+    messages_api_url = webex_api_url + "/" + "messages"
     payload = json.dumps ({
         "roomId": room_id,
         "markdown": markdown_text,
         "text": "Original Text included markdown"
     })
-    headers = {
-        'Authorization': 'Bearer ' + bot_token,
-        'Content-Type': 'application/json'
-    }
-    response = requests.request("POST", messages_api_url, headers=headers, data=payload)
-    print ("Send message to space status code: ", response.status_code)
-    if response.status_code != 200: print ("Error message: " + json.loads(response.text)['message'])
+    try:
+        response = requests.request("POST", messages_api_url, headers=headers, data=payload)
+        print ("Send message to space status code: ", response.status_code)
+    except Exception:
+        traceback.print_exc()
 
 def send_message_to_person(person_email, markdown_text):
-    path = "messages"
-    messages_api_url = webex_api_url + "/" + path # I should use urlunparse here too, I do not do it because there are no paremeters
+    messages_api_url = webex_api_url + "/" + "messages"
     payload = json.dumps ({
         "toPersonEmail": person_email,
         "markdown": markdown_text,
         "text": "Original Text included markdown"
     })
-    headers = {
-        'Authorization': 'Bearer ' + bot_token,
-        'Content-Type': 'application/json'
-    }
-    response = requests.request("POST", messages_api_url, headers=headers, data=payload)
-    print ("Send message to space status code: ", response.status_code)
-    if response.status_code != 200: print ("Error message: " + json.loads(response.text)['message'])
+    try:
+        response = requests.request("POST", messages_api_url, headers=headers, data=payload)
+        print ("Send message to space status code: ", response.status_code)
+    except Exception:
+        traceback.print_exc()
 
 def refresh_tokens():
     client_id = os.getenv("SERVICE_APP_CLIENT_ID")
     client_secret = os.getenv("SERVICE_APP_CLIENT_SECRET")   
     token_url = "https://webexapis.com/v1/access_token"
-    headers = {'content-type':'application/x-www-form-urlencoded'}
+    refresh_headers = {'content-type':'application/x-www-form-urlencoded'}
     # I am not sure if I can use urlencode/urlunparse here. Params are inside the body
     payload = ("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}").format(service_app_refresh_token, client_id, client_secret)
-    
-    response = requests.post(url=token_url, data=payload, headers=headers)
-    print ("Send message to space status code: ", response.status_code)
-    if response.status_code != 200: print ("Error message: " + json.loads(response.text)['message'])
-    
-    results = json.loads(response.text)
-    access_token = results["access_token"]
-    expires_in = results["expires_in"]
-    print ("Access Token expires in: ", expires_in)
-    print ("Remove this in production, access token: ", access_token)
-    return access_token
+    try:
+        response = requests.post(url=token_url, data=payload, headers=refresh_headers)
+        print ("Send message to space status code: ", response.status_code)
+        results = json.loads(response.text)
+        access_token = results["access_token"]
+        expires_in = results["expires_in"]
+        print ("Access Token expires in: ", expires_in)
+        print ("Remove this in production, access token: ", access_token)
+        return access_token
+    except Exception:
+        traceback.print_exc()    
 
 def scim_search_users (access_token):
     # SCIM API URl is not 'under' https://webexapis.com/v1
     scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users/'
-    payload = {}
-    headers = {
+    scim_search_headers = { 
         'Authorization': 'Bearer ' + access_token,
         'Content-Type': 'application/json'
     }
-    response = requests.request("GET", scim_base_url, headers=headers, data=payload)
-    print ("SCIM Search users status code: ", response.status_code)
-    
-    if response.status_code == 200:
+    try:
+        response = requests.request("GET", scim_base_url, headers=scim_search_headers)
+        print ("SCIM Search users status code: ", response.status_code)
         items = json.loads(response.text)['Resources']
         return items
+    except Exception:
+        traceback.print_exc()      
+    
+
     else: print ("Error message: " + json.loads(response.text)['message'])
 
 def check_for_new_users():
