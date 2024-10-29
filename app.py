@@ -9,7 +9,7 @@ load_dotenv()
 service_app_refresh_token = os.getenv("SERVICE_APP_REFRESH_TOKEN")
 bot_token = os.getenv("BOT_TOKEN")
 main_room_id = os.getenv("MAIN_ROOM_ID")
-reporting_room_id = os.getenv("REPOTING_ROOM_ID")
+reporting_room_id = os.getenv("REPORTING_ROOM_ID")
 webex_api_url = "https://webexapis.com/v1"
 org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
 
@@ -181,7 +181,6 @@ def check_for_new_users():
 def main_function():
     print ('App starts')
     new_users = check_for_new_users()
-    print (new_users)
     if new_users:
         for user in new_users:
             user_email = user['userName']
