@@ -116,7 +116,7 @@ def refresh_tokens():
     payload = ("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}").format(service_app_refresh_token, client_id, client_secret)
     try:
         response = requests.post(url=token_url, data=payload, headers=refresh_headers)
-        print ("Send message to space status code: ", response.status_code)
+        print ("Refresh token status code: ", response.status_code)
         results = json.loads(response.text)
         access_token = results["access_token"]
         expires_in = results["expires_in"]
@@ -124,7 +124,10 @@ def refresh_tokens():
         print ("Remove this in production, access token: ", access_token)
         return access_token
     except Exception as e:
+        print ("Error", e)
         traceback.print_exc()
+
+
         
 def scim_search_users (access_token):
     # SCIM API URl is not 'under' https://webexapis.com/v1
