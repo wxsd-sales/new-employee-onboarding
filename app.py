@@ -162,8 +162,8 @@ def check_for_new_users():
     
     access_token = refresh_tokens() # I pass token to reuse scim_search_users function to make it re-usable
     all_users = scim_search_users(access_token)
-    key_to_find = 'extensionAttribute1'
-    value_to_find = 'New-user'
+    key_to_find = 'postalCode'
+    value_to_find = 'E'
     new_users = []
     # the key 'extensionAttribute1' is not always present
     # I am not sure if I can search it doing comprehension, Y try normal for
