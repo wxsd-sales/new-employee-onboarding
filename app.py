@@ -30,7 +30,7 @@ def user_in_the_space (room_id, user_email):
         print ("User in the space GET status code: ", response.status_code)
         items = json.loads(response.text)['items']
         return items
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
     """
     if response.status_code == 200:
@@ -47,7 +47,7 @@ def get_room_name(room_id):
         print ("Get room status code: ", response.status_code)
         room_name = json.loads(response.text)['title']
         return room_name
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
 
 def get_user_name(user_email):
@@ -59,7 +59,7 @@ def get_user_name(user_email):
         print ("Get username status code: ", response.status_code)
         user_name = json.loads((response.text))['items'][0]['displayName'] # PENDING: always only one item ????
         return user_name
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
 
 def add_user_to_space(room_id, user_email, is_moderator=False):      
@@ -78,7 +78,7 @@ def add_user_to_space(room_id, user_email, is_moderator=False):
         try: 
             response = requests.request("POST", memberships_api_url, headers=headers, data=payload)
             print ("Add user to space status code: ", response.status_code)
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
 
 def send_message_to_space(room_id, markdown_text):
@@ -91,7 +91,7 @@ def send_message_to_space(room_id, markdown_text):
     try:
         response = requests.request("POST", messages_api_url, headers=headers, data=payload)
         print ("Send message to space status code: ", response.status_code)
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
 
 def send_message_to_person(person_email, markdown_text):
@@ -104,7 +104,7 @@ def send_message_to_person(person_email, markdown_text):
     try:
         response = requests.request("POST", messages_api_url, headers=headers, data=payload)
         print ("Send message to space status code: ", response.status_code)
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
 
 def refresh_tokens():
@@ -123,9 +123,9 @@ def refresh_tokens():
         print ("Access Token expires in: ", expires_in)
         print ("Remove this in production, access token: ", access_token)
         return access_token
-    except Exception:
-        traceback.print_exc()    
-
+    except Exception as e:
+        traceback.print_exc()
+        
 def scim_search_users (access_token):
     # SCIM API URl is not 'under' https://webexapis.com/v1
     scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users/'
@@ -138,7 +138,7 @@ def scim_search_users (access_token):
         print ("SCIM Search users status code: ", response.status_code)
         items = json.loads(response.text)['Resources']
         return items
-    except Exception:
+    except Exception as e:
         traceback.print_exc()      
 
 def check_for_new_users():
