@@ -80,6 +80,8 @@ def add_user_to_space(room_id, user_email, is_moderator=False):
             print ("Add user to space status code: ", response.status_code)
         except Exception as e:
             traceback.print_exc()
+    else:
+        print (f"User: {user_email} is already a member of the space")
 
 def send_message_to_space(room_id, markdown_text):
     messages_api_url = webex_api_url + "/" + "messages"
@@ -121,7 +123,7 @@ def refresh_tokens():
         access_token = results["access_token"]
         expires_in = results["expires_in"]
         print ("Access Token expires in: ", expires_in)
-        print ("Remove this in production, access token: ", access_token)
+        # print ("Remove this in production, access token: ", access_token)
         return access_token
     except Exception as e:
         print ("Error", e)
