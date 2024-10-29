@@ -64,9 +64,9 @@ def get_user_name(user_email):
 
 def add_user_to_space(room_id, user_email, is_moderator=False):      
     # check if user is already a member of the space
-    membebership_data = user_in_the_space(room_id, user_email)
+    membership_data = user_in_the_space(room_id, user_email)
     # if membership data is empty, add the user to the room
-    if not membebership_data:
+    if not membership_data:
         room_name = get_room_name(room_id)
         print (f"User: {user_email} is not member of Room: {room_name}")    
         memberships_api_url = webex_api_url + "/" + "memberships"
@@ -140,9 +140,6 @@ def scim_search_users (access_token):
         return items
     except Exception:
         traceback.print_exc()      
-    
-
-    else: print ("Error message: " + json.loads(response.text)['message'])
 
 def check_for_new_users():
    
@@ -185,11 +182,11 @@ def main_function():
             text_to_send = "User **" + user_email + "** added to Room " + reporting_room_id
             send_message_to_space(reporting_room_id, text_to_send)
             
-            # send 1:1 message to new empployee
+            # send 1:1 message to new employee
             user_name = get_user_name(user_email)
             welcome_message = "Hi " + user_name + ", welcome to Aruba" # Mentions are not supported in 1-to-1 rooms
             # welcome_message = "Hi <@personEmail:" + user_email  +  ">" + ", welcome to Aruba"
-            # one exmaple I found: welcome_message = "Hi <@personEmail:" + user_email + "|" + user_name + ">" + ", welcome to Aruba"
+            # one example I found: welcome_message = "Hi <@personEmail:" + user_email + "|" + user_name + ">" + ", welcome to Aruba"
             send_message_to_person(user_email,welcome_message)
             
             # report in the reporting space
