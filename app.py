@@ -166,18 +166,22 @@ def check_for_new_users():
     all_users = scim_search_users(access_token)
     key_to_find = 'postalCode'
     value_to_find = 'E'
+    key_to_find_test = 'extensionAttribute1'
+    value_to_find_test = 'New-user'
+    
     new_users = []
     # the key 'extensionAttribute1' is not always present
     # I am not sure if I can search it doing comprehension, Y try normal for
     for user in all_users:
-        if key_to_find in user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"]:
-            if user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"][key_to_find][0] == value_to_find:
+        if key_to_find_test in user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"]:
+            if user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"][key_to_find_test][0] == value_to_find_test:
                 new_users.append(user)
     return new_users
 
 def main_function():
     print ('App starts')
     new_users = check_for_new_users()
+    print (new_users)
     if new_users:
         for user in new_users:
             user_email = user['userName']
