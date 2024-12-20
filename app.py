@@ -12,19 +12,15 @@ main_room_id = os.getenv("MAIN_ROOM_ID")
 reporting_room_id = os.getenv("REPORTING_ROOM_ID")
 webex_api_url = "https://webexapis.com/v1"
 org_id = os.getenv("ORG_ID")
-
 headers = { 
     'Authorization': 'Bearer ' + bot_token,
     'Content-Type': 'application/json'
 }
 
 def user_in_the_space (room_id, user_email):
-    # You need to encode URL paratemeters properly, otherwise address with '+' will fail, for example
+    # You need to encode URL parameters properly, otherwise address with '+' will fail, for example
     encoded_email = urllib.parse.quote(user_email)
     memberships_api_url = "{0}/memberships?roomId={1}&personEmail={2}&max=100".format(webex_api_url, room_id, encoded_email)
-    # memberships_api_url = webex_api_url + "memberships" + "?roomId=" + room_id + "&max=100" + "&personEmail=" + user_email
-    # PENDING: pagination
-
     try:
         response = requests.request("GET", memberships_api_url, headers=headers)
         print ("User in the space GET status code: ", response.status_code)
@@ -32,13 +28,6 @@ def user_in_the_space (room_id, user_email):
         return items
     except Exception as e:
         traceback.print_exc()
-    """
-    if response.status_code == 200:
-        items = json.loads(response.text)['items']
-        return items
-    else: print ("Error message: " + json.loads(response.text)['message']) # if you do it like this, this line could not be loaded depending on the error, 
-    script fails after the GET request. For example if the webex_api_url is not well formed
-    """ 
 
 def get_room_name(room_id):
     rooms_api_url = "{0}/rooms/{1}".format(webex_api_url, room_id)
@@ -51,7 +40,6 @@ def get_room_name(room_id):
         traceback.print_exc()
 
 def get_user_name(user_email):
-    # people_api_url = webex_api_url + "people" + "?email=" + user_email
     encoded_email = urllib.parse.quote(user_email)
     people_api_url = "{0}/people?email={1}".format(webex_api_url, encoded_email)
     try:
@@ -116,7 +104,6 @@ def refresh_tokens():
     client_secret = os.getenv("SERVICE_APP_CLIENT_SECRET")   
     token_url = "https://webexapis.com/v1/access_token"
     refresh_headers = {'content-type':'application/x-www-form-urlencoded'}
-    # I am not sure if I can use urlencode/urlunparse here. Params are inside the body
     payload = ("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}").format(service_app_refresh_token, client_id, client_secret)
     try:
         response = requests.post(url=token_url, data=payload, headers=refresh_headers)
@@ -131,11 +118,8 @@ def refresh_tokens():
         print ("Error", e)
         traceback.print_exc()
 
-
-        
 def scim_search_users (access_token):
     # SCIM API URl is not 'under' https://webexapis.com/v1
-    # scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users'
     start_index = '1'
     scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users' + '?startIndex=' + start_index
     start_index = int(start_index)
@@ -149,7 +133,6 @@ def scim_search_users (access_token):
         items = []
         response = requests.request("GET", scim_base_url, headers=scim_search_headers)
         totalResults = json.loads(response.text)['totalResults']
-
         while start_index < totalResults:
             response = requests.request("GET", scim_base_url, headers=scim_search_headers)
             print ("SCIM Search users status code: ", response.status_code)
@@ -164,38 +147,19 @@ def scim_search_users (access_token):
         traceback.print_exc()      
 
 def check_for_new_users():
-   
-    # Use SCIM 2 API
-    # Avoid listing all users would be a good practice: get only new users using filters
-    #    "urn:scim:schemas:extension:cisco:webexidentity:2.0:User": {
-    #            "meta": {
-    #                "organizationId": "952e87f4-5c49-4ca1-b285-ee0570c2498c"
-    #            },
-    #            "userNameType": "email",
-    #                "New-user"
-    #           "extensionAttribute1": [
-    #            ]
-    #        }
-    # With filters, I am able to get meta.organizationId but not extensionAttribute1
-    # Let's then get all the users and use only the ones with the attribute
-    
     access_token = refresh_tokens() # I pass token to reuse scim_search_users function to make it re-usable
     all_users = scim_search_users(access_token)
     key_to_find = 'postalCode'
     value_to_find = 'E'
 
     new_users = []
-    # the key 'extensionAttribute1' is not always present
-    # I am not sure if I can search it doing comprehension, Y try normal for
     for user in all_users:
-        # if key_to_find in user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"]:
         # not all users have addresses
         # should we prepare the code for multiple addresses?
         if 'addresses' in user:
             if user['addresses'][0][key_to_find] == value_to_find:
                 print (f'postalCode: {user['addresses'][0]['postalCode']}, for user: {user['userName']}')
                 new_users.append(user)
-    # print ('New users: ',new_users)
     return new_users
 
 def main_function():
@@ -206,9 +170,7 @@ def main_function():
         for user in new_users:
             user_email = user['userName']
             user_added = add_user_to_space(main_room_id, user_email)
-
             if user_added:
-            
                 # report in the reporting space
                 text_to_send = "User **" + user_email + "** added to Room " + reporting_room_id
                 send_message_to_space(reporting_room_id, text_to_send)
