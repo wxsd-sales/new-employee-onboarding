@@ -11,7 +11,7 @@ bot_token = os.getenv("BOT_TOKEN")
 main_room_id = os.getenv("MAIN_ROOM_ID")
 reporting_room_id = os.getenv("REPORTING_ROOM_ID")
 webex_api_url = "https://webexapis.com/v1"
-org_id = "952e87f4-5c49-4ca1-b285-ee0570c2498c"
+org_id = os.getenv("ORG_ID")
 
 headers = { 
     'Authorization': 'Bearer ' + bot_token,
@@ -80,8 +80,10 @@ def add_user_to_space(room_id, user_email, is_moderator=False):
             print ("Add user to space status code: ", response.status_code)
         except Exception as e:
             traceback.print_exc()
+        return True
     else:
         print (f"User: {user_email} is already a member of the space")
+        return False
 
 def send_message_to_space(room_id, markdown_text):
     messages_api_url = webex_api_url + "/" + "messages"
@@ -123,7 +125,7 @@ def refresh_tokens():
         access_token = results["access_token"]
         expires_in = results["expires_in"]
         print ("Access Token expires in: ", expires_in)
-        # print ("Remove this in production, access token: ", access_token)
+        print ("Remove this in production, access token: ", access_token)
         return access_token
     except Exception as e:
         print ("Error", e)
@@ -133,15 +135,30 @@ def refresh_tokens():
         
 def scim_search_users (access_token):
     # SCIM API URl is not 'under' https://webexapis.com/v1
-    scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users/'
+    # scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users'
+    start_index = '1'
+    scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users' + '?startIndex=' + start_index
+    start_index = int(start_index)
     scim_search_headers = { 
         'Authorization': 'Bearer ' + access_token,
         'Content-Type': 'application/json'
     }
     try:
+        # SCIM API only returns 100 users
+        api_max = 100
+        items = []
         response = requests.request("GET", scim_base_url, headers=scim_search_headers)
-        print ("SCIM Search users status code: ", response.status_code)
-        items = json.loads(response.text)['Resources']
+        totalResults = json.loads(response.text)['totalResults']
+
+        while start_index < totalResults:
+            response = requests.request("GET", scim_base_url, headers=scim_search_headers)
+            print ("SCIM Search users status code: ", response.status_code)
+            items.extend(json.loads(response.text)['Resources']) 
+            start_index += api_max
+            start_index_str = str(start_index)
+            scim_base_url = 'https://webexapis.com/identity/scim/' + org_id + '/v2/Users' + '?startIndex=' + start_index_str
+        print ('Total Users are', totalResults)
+        print ('Users Read', len(items))
         return items
     except Exception as e:
         traceback.print_exc()      
@@ -166,39 +183,45 @@ def check_for_new_users():
     all_users = scim_search_users(access_token)
     key_to_find = 'postalCode'
     value_to_find = 'E'
-    key_to_find_test = 'extensionAttribute1'
-    value_to_find_test = 'New-user'
-    
+
     new_users = []
     # the key 'extensionAttribute1' is not always present
     # I am not sure if I can search it doing comprehension, Y try normal for
     for user in all_users:
-        if key_to_find_test in user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"]:
-            if user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"][key_to_find_test][0] == value_to_find_test:
+        # if key_to_find in user["urn:scim:schemas:extension:cisco:webexidentity:2.0:User"]:
+        # not all users have addresses
+        # should we prepare the code for multiple addresses?
+        if 'addresses' in user:
+            if user['addresses'][0][key_to_find] == value_to_find:
+                print (f'postalCode: {user['addresses'][0]['postalCode']}, for user: {user['userName']}')
                 new_users.append(user)
+    # print ('New users: ',new_users)
     return new_users
 
 def main_function():
     print ('App starts')
     new_users = check_for_new_users()
+    user_added = False
     if new_users:
         for user in new_users:
             user_email = user['userName']
-            add_user_to_space(main_room_id, user_email)
+            user_added = add_user_to_space(main_room_id, user_email)
+
+            if user_added:
             
-            # report in the reporting space
-            text_to_send = "User **" + user_email + "** added to Room " + reporting_room_id
-            send_message_to_space(reporting_room_id, text_to_send)
-            
-            # send 1:1 message to new employee
-            user_name = get_user_name(user_email)
-            welcome_message = "Hi " + user_name + ", welcome to Aruba" # Mentions are not supported in 1-to-1 rooms
-            # welcome_message = "Hi <@personEmail:" + user_email  +  ">" + ", welcome to Aruba"
-            # one example I found: welcome_message = "Hi <@personEmail:" + user_email + "|" + user_name + ">" + ", welcome to Aruba"
-            send_message_to_person(user_email,welcome_message)
-            
-            # report in the reporting space
-            text_to_send = "Welcome message to **" + user_name + "** (" + user_email + ") " + "sent"
-            send_message_to_space(reporting_room_id, text_to_send)
+                # report in the reporting space
+                text_to_send = "User **" + user_email + "** added to Room " + reporting_room_id
+                send_message_to_space(reporting_room_id, text_to_send)
+                
+                # send 1:1 message to new employee
+                user_name = get_user_name(user_email)
+                welcome_message = "Hi " + user_name + ", welcome to Aruba" # Mentions are not supported in 1-to-1 rooms
+                # welcome_message = "Hi <@personEmail:" + user_email  +  ">" + ", welcome to Aruba"
+                # one example I found: welcome_message = "Hi <@personEmail:" + user_email + "|" + user_name + ">" + ", welcome to Aruba"
+                send_message_to_person(user_email,welcome_message)
+                
+                # report in the reporting space
+                text_to_send = "Welcome message to **" + user_name + "** (" + user_email + ") " + "sent"
+                send_message_to_space(reporting_room_id, text_to_send)
 if __name__ == '__main__':
     main_function()
