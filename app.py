@@ -73,29 +73,32 @@ def add_user_to_space(room_id, user_email, is_moderator=False):
         print (f"User: {user_email} is already a member of the space")
         return False
 
-def send_message_to_space(room_id, markdown_text):
+def send_message_to_space(room_id, markdown_text, attachments = []):
     messages_api_url = webex_api_url + "/" + "messages"
     payload = json.dumps ({
         "roomId": room_id,
         "markdown": markdown_text,
-        "text": "Original Text included markdown"
+        "text": "Original Text included markdown",
+        "attachments": attachments
     })
+    print (payload)
     try:
         response = requests.request("POST", messages_api_url, headers=headers, data=payload)
         print ("Send message to space status code: ", response.status_code)
     except Exception as e:
         traceback.print_exc()
 
-def send_message_to_person(person_email, markdown_text):
+def send_message_to_person(person_email, markdown_text, attachments = '[]'):
     messages_api_url = webex_api_url + "/" + "messages"
     payload = json.dumps ({
         "toPersonEmail": person_email,
         "markdown": markdown_text,
-        "text": "Original Text included markdown"
+        "text": "Original Text included markdown",
+        "attachments": attachments
     })
     try:
         response = requests.request("POST", messages_api_url, headers=headers, data=payload)
-        print ("Send message to space status code: ", response.status_code)
+        print ("Send message to person status code: ", response.status_code)
     except Exception as e:
         traceback.print_exc()
 
@@ -172,15 +175,40 @@ def main_function():
             user_added = add_user_to_space(main_room_id, user_email)
             if user_added:
                 # report in the reporting space
-                text_to_send = "User **" + user_email + "** added to Room " + reporting_room_id
+                user_name = get_user_name(user_email)
+                room_name = get_room_name(main_room_id)
+                text_to_send = "User **" + user_name + "** (" + user_email + ") " + "added to Room **" + room_name + "**"
                 send_message_to_space(reporting_room_id, text_to_send)
                 
                 # send 1:1 message to new employee
-                user_name = get_user_name(user_email)
+                card_body = [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "content": {
+                            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                            "type": "AdaptiveCard",
+                            "version": "1.3",
+                            "body": [
+                                {
+                                    "type": "Image",
+                                    "url": "https://raw.githubusercontent.com/wxsd-sales/new-employee-onboarding/refs/heads/main/aruba-original.jpg"
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": "Welcome to Aruba!",
+                                    "wrap": True,
+                                    "size": "ExtraLarge",
+                                    "weight": "Bolder",
+                                    "horizontalAlignment": "Center"
+                                }
+                            ]
+                        }
+                    }
+                ]
                 welcome_message = "Hi " + user_name + ", welcome to Aruba" # Mentions are not supported in 1-to-1 rooms
                 # welcome_message = "Hi <@personEmail:" + user_email  +  ">" + ", welcome to Aruba"
                 # one example I found: welcome_message = "Hi <@personEmail:" + user_email + "|" + user_name + ">" + ", welcome to Aruba"
-                send_message_to_person(user_email,welcome_message)
+                send_message_to_person(user_email,welcome_message, card_body)
                 
                 # report in the reporting space
                 text_to_send = "Welcome message to **" + user_name + "** (" + user_email + ") " + "sent"
