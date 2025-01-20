@@ -81,7 +81,6 @@ def send_message_to_space(room_id, markdown_text, attachments = []):
         "text": "Original Text included markdown",
         "attachments": attachments
     })
-    print (payload)
     try:
         response = requests.request("POST", messages_api_url, headers=headers, data=payload)
         print ("Send message to space status code: ", response.status_code)
@@ -115,7 +114,7 @@ def refresh_tokens():
         access_token = results["access_token"]
         expires_in = results["expires_in"]
         print ("Access Token expires in: ", expires_in)
-        print ("Remove this in production, access token: ", access_token)
+        ## print ("Remove this in production, access token: ", access_token)
         return access_token
     except Exception as e:
         print ("Error", e)
