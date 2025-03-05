@@ -168,7 +168,7 @@ def check_for_new_users():
 def run_for_ever():
     while True:
         main_function()
-        time.sleep(10)
+        time.sleep(86400)
 
 def main_function():
     print ('App starts')
