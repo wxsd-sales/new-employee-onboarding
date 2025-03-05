@@ -4,6 +4,7 @@ import requests
 import json
 import urllib.parse
 import traceback
+import time
 
 load_dotenv()
 service_app_refresh_token = os.getenv("SERVICE_APP_REFRESH_TOKEN")
@@ -163,6 +164,11 @@ def check_for_new_users():
                 print (f'postalCode: {user['addresses'][0]['postalCode']}, for user: {user['userName']}')
                 new_users.append(user)
     return new_users
+
+def run_for_ever():
+    while True:
+        main_function()
+        time.sleep(10)
 
 def main_function():
     print ('App starts')
