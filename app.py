@@ -219,4 +219,4 @@ def main_function():
                 text_to_send = "Welcome message to **" + user_name + "** (" + user_email + ") " + "sent"
                 send_message_to_space(reporting_room_id, text_to_send)
 if __name__ == '__main__':
-    main_function()
+    run_for_ever()
