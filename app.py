@@ -220,3 +220,12 @@ def main_function():
                 send_message_to_space(reporting_room_id, text_to_send)
 if __name__ == '__main__':
     run_for_ever()
+
+
+# Improvements
+# 
+# 
+# 
+# 
+# 
+# 
